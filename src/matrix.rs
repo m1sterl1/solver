@@ -1,4 +1,6 @@
-use std::{ops::Index, fmt::{Formatter, Display, write}};
+use std::{error::Error, fmt::{write, Display, Formatter}, fs::read_to_string, ops::Index, path::Path};
+
+type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
 struct Matrix<T>{
     m: usize,       // number of rows 
@@ -22,6 +24,25 @@ impl<T:Default> Matrix<T>{
             inner.push(iter.next().unwrap());
         }
         Self { m, n, inner }
+    }
+
+    fn from_file<P:AsRef<Path>>(path: P) -> Result<Matrix<char>>{
+        let words = read_to_string(path)?;
+        let words = words
+        .split('\n')
+        .map(|s|s.trim())
+        .collect::<Vec<_>>();
+        let length = words
+        .get(0)
+        .ok_or("Empty list")?
+        .len();
+        if !words.iter().all(|w|w.len() == length){
+            Err("Words length is not same".into())
+        }
+        else {
+            let chars = words.concat();
+            Ok(Matrix::from_iter(chars.chars().into_iter(), length, words.len()))
+        }
     }
 
     fn column(&self, j:usize) -> Vec<&T>{
