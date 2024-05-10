@@ -36,6 +36,15 @@ impl<T: Copy + Default> Matrix<T> {
         Self { m, n, inner }
     }
 
+    /// Returns number of rows
+    pub fn rows(&self) -> usize{
+        self.m
+    }
+
+    /// Returns number of columns
+    pub fn cols(&self) -> usize{
+        self.n
+    }
     /// Fill matrix with values provided with callback
     /// Fn(i,j) -> T
     pub fn fill<F: Fn((usize, usize)) -> T>(&mut self, f: F) {
