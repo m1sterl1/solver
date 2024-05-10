@@ -1,30 +1,40 @@
 use std::{
-    error::Error,
     fmt::{Display, Formatter},
     fs::read_to_string,
-    ops::Index,
+    ops::{Index, IndexMut},
     path::Path,
 };
 
-type Result<T> = std::result::Result<T, Box<dyn Error>>;
+use crate::Result;
 
-struct Matrix<T> {
+
+pub struct Matrix<T> {
     m: usize, // number of rows
     n: usize, // number of cols
     inner: Vec<T>,
 }
 
-impl<T: Default> Matrix<T> {
-    fn new(m: usize, n: usize) -> Self {
-        let mut inner = Vec::with_capacity(m * n);
+impl<T: Copy+Default> Matrix<T> {
 
+    /// Create matrix with `m` rows and `n` columns
+    /// with default value for type T 
+    pub fn new(m: usize, n: usize) -> Self {
+        Self::new_with(m, n, Default::default())
+    }
+
+    /// Create matrix with `m` rows and `n` columns
+    /// with value `val`
+    pub fn new_with(m: usize, n: usize, val: T) -> Self {
+        let mut inner = Vec::with_capacity(m * n);
         for _ in 0..m * n {
-            inner.push(Default::default());
+            inner.push(val.clone());
         }
         Self { m, n, inner }
     }
 
-    fn from_iter(mut iter: impl Iterator<Item = T>, m: usize, n: usize) -> Self {
+    /// Create matrix with `m` rows and `n` columns
+    /// using values provided with iterator
+    fn new_iter(mut iter: impl Iterator<Item = T>, m: usize, n: usize) -> Self {
         let mut inner = Vec::with_capacity(m * n);
         for _ in 0..m * n {
             inner.push(iter.next().unwrap());
@@ -32,19 +42,30 @@ impl<T: Default> Matrix<T> {
         Self { m, n, inner }
     }
 
-    fn from_file<P: AsRef<Path>>(path: P) -> Result<Matrix<char>> {
-        let words = read_to_string(path)?;
-        let words = words.split('\n').map(|s| s.trim()).collect::<Vec<_>>();
-        let length = words.first().ok_or("Empty list")?.len();
-        if !words.iter().all(|w| w.len() == length) {
-            Err("Words length is not same".into())
-        } else {
-            let chars = words.concat();
-            Ok(Matrix::from_iter(chars.chars(), length, words.len()))
+    /// Fill matrix with values provided with callback
+    /// Fn(i,j) -> T
+    pub fn fill<F:Fn((usize, usize)) -> T>(&mut self, f:F){
+        for i in 0..self.n{
+            for j in 0..self.m{
+                self[(i,j)] = f((i,j))
+            }
         }
     }
 
-    fn column(&self, j: usize) -> Vec<&T> {
+    /// Fill diagonal matrix with values provided with callback
+    /// Compute values not for all indexes but only 
+    /// for left bottom triagonal part
+    pub fn fill_diag<F:Fn((usize, usize)) -> T>(&mut self, f:F){
+        for i in 0..self.n{
+            for j in 0..i{
+                self[(i,j)] = f((i,j));
+                self[(j,i)] = self[(i,j)];
+            }
+        }
+    }
+
+    /// Returns Vec of ref to values for `j` column
+    pub fn column(&self, j: usize) -> Vec<&T> {
         let mut column = Vec::new();
         for i in 0..self.m {
             column.push(&self[(i, j)])
@@ -52,8 +73,9 @@ impl<T: Default> Matrix<T> {
         column
     }
 
-    fn row(&self, i: usize) -> Vec<&T> {
-        self.inner[i * self.n..=i * self.n + self.m]
+    /// Returns Vec of ref to values for `i` row
+    pub fn row(&self, i: usize) -> Vec<&T> {
+        self.inner[i * self.n..i * self.n + self.m]
             .iter()
             .collect()
     }
@@ -79,30 +101,48 @@ impl<T> Index<(usize, usize)> for Matrix<T> {
     }
 }
 
+impl<T> IndexMut<(usize, usize)> for Matrix<T> {
+    fn index_mut(&mut self, index: (usize, usize)) -> &mut Self::Output {
+        let (i, j) = index;
+        &mut self.inner[i * self.n + j]
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::Matrix;
 
     #[test]
-    fn init() {
+    fn test_new_iter() {
         let words = [
             "favored", "thirsty", "whoever", "ghengis", "mounted", "freedom",
         ];
-        let words = words.map(|s| s.to_string());
+        // Convert words to iterator of chars
         let chars = words.iter().map(|s| s.chars()).collect::<Vec<_>>();
         let chars = chars.into_iter().flatten().collect::<Vec<_>>();
-        let m = Matrix::from_iter(chars.into_iter(), 6, 7);
-        let c: Matrix<usize> = Matrix::new(6, 7);
-
-        println!("column");
-        for c in m.column(0) {
-            println!("{}", c);
-        }
-
-        println!("row");
-        m.row(5).iter().for_each(|i| println!("{i}"));
+        let m = Matrix::new_iter(chars.into_iter(), 6, 7);
 
         println!("{m}");
-        println!("{c}");
+
+        // Test columnt
+        assert_eq!(m.column(0).into_iter().collect::<String>(), "ftwgmf".to_string());
+
+        // Test row
+        assert_eq!(m.row(2).into_iter().collect::<String>(), "whoeve".to_string());
+
+    }
+
+    #[test]
+    fn test_new() {
+        let m: Matrix<usize> = Matrix::new(6, 7);
+        println!("{m}");
+    }
+
+    #[test]
+    fn test_fill(){
+        let mut m: Matrix<i32> = Matrix::new(3, 3);
+        let f = |(i,j)|(i+j) as i32;
+        m.fill(f);
+        println!{"{m}"}
     }
 }
