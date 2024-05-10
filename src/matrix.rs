@@ -1,12 +1,7 @@
 use std::{
     fmt::{Display, Formatter},
-    fs::read_to_string,
     ops::{Index, IndexMut},
-    path::Path,
 };
-
-use crate::Result;
-
 
 pub struct Matrix<T> {
     m: usize, // number of rows
@@ -14,10 +9,9 @@ pub struct Matrix<T> {
     inner: Vec<T>,
 }
 
-impl<T: Copy+Default> Matrix<T> {
-
+impl<T: Copy + Default> Matrix<T> {
     /// Create matrix with `m` rows and `n` columns
-    /// with default value for type T 
+    /// with default value for type T
     pub fn new(m: usize, n: usize) -> Self {
         Self::new_with(m, n, Default::default())
     }
@@ -27,7 +21,7 @@ impl<T: Copy+Default> Matrix<T> {
     pub fn new_with(m: usize, n: usize, val: T) -> Self {
         let mut inner = Vec::with_capacity(m * n);
         for _ in 0..m * n {
-            inner.push(val.clone());
+            inner.push(val);
         }
         Self { m, n, inner }
     }
@@ -44,22 +38,22 @@ impl<T: Copy+Default> Matrix<T> {
 
     /// Fill matrix with values provided with callback
     /// Fn(i,j) -> T
-    pub fn fill<F:Fn((usize, usize)) -> T>(&mut self, f:F){
-        for i in 0..self.n{
-            for j in 0..self.m{
-                self[(i,j)] = f((i,j))
+    pub fn fill<F: Fn((usize, usize)) -> T>(&mut self, f: F) {
+        for i in 0..self.n {
+            for j in 0..self.m {
+                self[(i, j)] = f((i, j))
             }
         }
     }
 
     /// Fill diagonal matrix with values provided with callback
-    /// Compute values not for all indexes but only 
+    /// Compute values not for all indexes but only
     /// for left bottom triagonal part
-    pub fn fill_diag<F:Fn((usize, usize)) -> T>(&mut self, f:F){
-        for i in 0..self.n{
-            for j in 0..i{
-                self[(i,j)] = f((i,j));
-                self[(j,i)] = self[(i,j)];
+    pub fn fill_diag<F: Fn((usize, usize)) -> T>(&mut self, f: F) {
+        for i in 0..self.n {
+            for j in 0..i {
+                self[(i, j)] = f((i, j));
+                self[(j, i)] = self[(i, j)];
             }
         }
     }
@@ -75,9 +69,7 @@ impl<T: Copy+Default> Matrix<T> {
 
     /// Returns Vec of ref to values for `i` row
     pub fn row(&self, i: usize) -> Vec<&T> {
-        self.inner[i * self.n..i * self.n + self.m]
-            .iter()
-            .collect()
+        self.inner[i * self.n..i * self.n + self.m].iter().collect()
     }
 }
 
@@ -125,11 +117,16 @@ mod tests {
         println!("{m}");
 
         // Test columnt
-        assert_eq!(m.column(0).into_iter().collect::<String>(), "ftwgmf".to_string());
+        assert_eq!(
+            m.column(0).into_iter().collect::<String>(),
+            "ftwgmf".to_string()
+        );
 
         // Test row
-        assert_eq!(m.row(2).into_iter().collect::<String>(), "whoeve".to_string());
-
+        assert_eq!(
+            m.row(2).into_iter().collect::<String>(),
+            "whoeve".to_string()
+        );
     }
 
     #[test]
@@ -139,10 +136,10 @@ mod tests {
     }
 
     #[test]
-    fn test_fill(){
+    fn test_fill() {
         let mut m: Matrix<i32> = Matrix::new(3, 3);
-        let f = |(i,j)|(i+j) as i32;
+        let f = |(i, j)| (i + j) as i32;
         m.fill(f);
-        println!{"{m}"}
+        println! {"{m}"}
     }
 }
