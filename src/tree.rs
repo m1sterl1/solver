@@ -1,41 +1,56 @@
-use std::{fmt::Display, rc::Rc};
+use std::{fmt::Display, io::{stdin, Stdin}, rc::Rc};
+
+use crate::utils::read_index;
 
 pub enum Kind{
-    Intersect(usize),       // choice with cost
-    Word {
-        s:String,           // word
-        cost: usize},       // life cost,       
+    Intersect(usize), // choice with cost
+    Word (String),
     Root
 }
 
 pub struct Node{
+    cost: usize,                // life cost
     kind: Kind,
     children: Vec<Rc<Node>>
 }
 
 impl Node{
-    pub fn new_word(word:&str, cost: usize) -> Self{
+    pub fn new_word(word:&str) -> Self{
         Self { 
-            kind: Kind::Word{s: word.to_string(), cost}, 
-            children: vec![]
+            kind: Kind::Word(word.to_string()), 
+            children: vec![],
+            cost:0
         }
     }
     
-    pub fn new_choice(choice:usize) -> Self{
-        Self { kind: Kind::Intersect(choice), children: vec![]}
+    pub fn new_intersection(choice:usize) -> Self{
+        Self { kind: Kind::Intersect(choice), children: vec![], cost: 0}
     }
-    pub fn new_root(children: Vec<Node>) -> Self{
-        let mut node = Self{kind: Kind::Root, children:vec![]};
-        node.set_children(children);
-        node
+    pub fn new_root() -> Self{
+        Self{kind: Kind::Root, children:vec![], cost:0}
+
     }
 
+    // Set children
     pub fn set_children(&mut self, children: Vec<Node>){
-        let children = children
-        .into_iter()
-        .map(|ch|Rc::new(ch))
-        .collect();
-        self.children = children;
+        for child in children{
+            self.append_child(child)
+        }
+    }
+
+    /// Append child to node, update cost value
+    pub fn append_child(&mut self, child: Node){
+        if let Kind::Word(_) = self.kind{
+            self.cost = if child.cost < self.cost {
+                self.cost
+            } else {
+                child.cost + 1
+            }
+        } 
+        else{
+            self.cost = self.cost.max(child.cost);
+        }
+        self.children.push(Rc::new(child));
     }
 
     fn children(&self) -> &[Rc<Node>]{
@@ -43,9 +58,86 @@ impl Node{
     }
 }
 
+impl Display for Node{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let node = match &self.kind{ 
+            Kind::Word(word) => format!("Word {} cost {}", word, self.cost),
+            Kind::Intersect(i) => format!("Intersect {} cost {}", i, self.cost),
+            Kind::Root => format!("Root, cost {}", self.cost)
+        };
+        write!(f, "{node}")
+    }
+}
+
 pub struct Tree{
     root: Rc<Node>,
     current: Rc<Node>,
+    stdin: Stdin,
 }
 
+impl Tree{
+    pub fn new(root: Node) -> Self{
+        let root = Rc::new(root);
+        let current = root.clone();
+        Self{root, current, stdin: stdin()}
+    }
+    pub fn print(&self){
+        self.print_ident(&self.root, 0);
+    }
 
+    fn print_ident(&self, node:&Rc<Node>, ident: usize){
+        println!("{}{}", "\t".repeat(ident), node);
+        let ident = ident + 1;
+        for child in node.children(){
+            self.print_ident(child, ident);
+        }
+    }
+
+    pub fn run(&mut self){
+        self.next();
+    }
+
+    fn next(&mut self){
+        match self.current.kind{
+            Kind::Root => {
+                println!("Word list:");
+                for (i, node) in self.current.children.iter().enumerate(){
+                    if let Kind::Word(word) = &node.kind{
+                        println!("{:2}. {}, max life cost {}", i, word, node.cost);
+                    }
+                // let mut canditates = self.current.children.clone();
+                // canditates.sort_by(|n1, n2|n1.cost.partial_cmp(&n2.cost));
+                // let min_cost = canditates.first().unwrap().cost;
+                // let candidates = canditates.into_iter().filter(|n|n.cost == min_cost).collect::<Vec<_>>();
+                }
+                println!("Choose:");
+                let max_index =  self.current.children.iter().count();
+                let index = read_index(&self.stdin, max_index);
+                self.current = self.current.children[index].clone();
+                self.next();
+            }
+            _ => {}
+        }
+    }
+}
+
+#[cfg(test)]
+mod test{
+
+    use super::{Node, Tree};
+
+    #[test]
+    fn print(){
+        let mut root = Node::new_root();
+        let word = Node::new_word("hello");
+        let mut intersection = Node::new_intersection(0);
+        intersection.append_child(word);
+        let word = Node::new_word("one");
+        intersection.append_child(word);
+        root.append_child(intersection);
+        
+        let tree = Tree::new(root);
+        tree.print();
+
+    }
+}

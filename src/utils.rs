@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::hash::Hash;
+use std::io::Stdin;
 use std::iter::zip;
 
 //////// Groups trait ////////
@@ -56,6 +57,26 @@ where
 /// for two strings
 pub fn get_coincidence(s1: &str, s2: &str) -> usize {
     zip(s1.chars(), s2.chars()).fold(0, |acc, (c1, c2)| if c1.eq(&c2) { acc + 1 } else { acc })
+}
+
+
+pub fn read_index(stdin: &Stdin, max_index: usize) -> usize {
+    loop {
+        let mut buf = String::new();
+        if let Ok(s) = stdin.read_line(&mut buf) {
+            if let Ok(i) = buf.trim().parse::<usize>() {
+                if i < max_index {
+                    return i;
+                } else {
+                    println!("Index out of range, try again")
+                }
+            } else {
+                println!("Error parsing index, try again")
+            }
+        } else {
+            println!("Someghing wrong, try again")
+        }
+    }
 }
 
 #[cfg(test)]

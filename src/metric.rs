@@ -1,31 +1,36 @@
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display};
 
 use crate::utils::{Groups, GroupsStruct};
 
+type Classes = HashMap<i32, Vec<usize>>;
+
 #[derive(Clone)]
 pub struct Metric {
+    word: String,
     // Number of groups
     g_number: usize,
     // Max(group_elements) - Min(group_elements)
     delta: usize,
     // groups
-    groups: GroupsStruct<i32>,
+    groups: Classes,
 }
 
 impl Metric {
-    pub fn from_group(mut groups: GroupsStruct<i32>) -> Self {
-        groups.groups_mut().remove(&-1);
-        let g = groups.groups();
-        let g_number = g.len();
+    pub fn from_group(word: &str, groups: GroupsStruct<i32>) -> Self {
+        let mut groups = groups.groups().clone();
+        groups.remove(&-1);
+        let g_number = groups.len();
         let delta =
-            g.values().map(|v| v.len()).max().unwrap() - g.values().map(|v| v.len()).min().unwrap();
+            groups.values().map(|v| v.len()).max().unwrap() 
+            - groups.values().map(|v| v.len()).min().unwrap();
         Self {
+            word: word.to_string(),
             g_number,
             delta,
             groups,
         }
     }
-    pub fn groups(&self) -> &GroupsStruct<i32> {
+    pub fn groups(&self) -> &Classes {
         &self.groups
     }
 }
@@ -37,7 +42,7 @@ impl Display for Metric {
             "Number: {}, Delta: {}, Groups: {:?}",
             self.g_number,
             self.delta,
-            self.groups.groups()
+            self.groups()
         )
     }
 }
@@ -73,8 +78,8 @@ mod test {
         let mut g1 = vec![0, 0, 1, -1, 2, 1].into_iter().groups();
         let mut g2 = vec![0, 0, 0, -1, 2, 1].into_iter().groups();
         println!("{:?}\n{:?}", g1.groups(), g2.groups());
-        let m1 = Metric::from_group(g1);
-        let m2 = Metric::from_group(g2);
+        let m1 = Metric::from_group("hello", g1);
+        let m2 = Metric::from_group("world", g2);
         println!("M1 {m1}, M2 {m2}, {:?}", m1.partial_cmp(&m2));
     }
 }

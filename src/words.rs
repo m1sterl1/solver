@@ -2,6 +2,7 @@ use crate::matrix::Matrix;
 use crate::metric::Metric;
 use crate::utils::{get_coincidence, Groups, GroupsStruct};
 use crate::Result;
+use crate::tree::{Kind, Node, Tree};
 use std::{fs::read_to_string, path::Path};
 
 pub struct Words {
@@ -25,10 +26,9 @@ impl Words {
             .collect();
         Self::check_words(&words)?;
         let intersections = Matrix::new_with(words.len(), words.len(), -1);
-        Ok(Self {
-            words,
-            intersections,
-        })
+        let mut words = Self {words,intersections};
+        words.compute_intersections();
+        Ok(words)
     }
 
     /// Create new instance from file with words
@@ -38,25 +38,54 @@ impl Words {
         Self::from_iter(words)
     }
 
-    /// Compute intersections, metrics for each word
+    /// Compute metrics for each word
     ///
-    pub fn solve(&mut self) -> Vec<(usize, Metric)> {
-        self.compute_intersections();
-        // form Vec<(index, metric)>
-        let mut metrics = (0..self.intersections.rows())
-            .map(|i| self.intersections.row(i))
-            .map(|r| r.into_iter().map(|i| *i).collect::<Vec<_>>())
-            .map(|r| r.into_iter().groups())
-            .map(|mut g| Metric::from_group(g))
-            .enumerate()
-            .collect::<Vec<_>>();
-        // take all equal highest metrics
-        metrics.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
-        let first_metric = &metrics.first().unwrap().1.clone();
-        metrics
+    pub fn build_tree(&self) -> Tree {
+        let nodes = self.build_children();
+        let mut root = Node::new_root();
+        root.set_children(nodes);
+        Tree::new(root)
+    }
+
+    fn build_children(&self) -> Vec<Node>{
+        let mut nodes = Vec::new();
+        for (i, word) in self.words.iter().enumerate(){
+            // create groups of intersections
+            // {intercection_number:[word_index1, word_index2,...]}
+            let mut groups = self.intersections
+            .row(i)
             .into_iter()
-            .filter(|(i, m)| m == first_metric)
-            .collect()
+            .map(|i|*i)
+            .groups();
+            // remove extra element
+            groups.groups_mut().remove(&-1);
+            // create Word node
+            let mut word_node = Node::new_word(word);
+            // iterate intersections/ words
+            for (intersections, words) in groups.groups().iter(){
+                // convert words indexes to words strings
+                let words:Vec<_> = words
+                .into_iter()
+                .map(|&i|&self.words[i])
+                .collect();
+                // create new intercection node (Terminal determine intersections)
+                let mut intercection_node = Node::new_intersection(*intersections as usize);
+                match words.len(){
+                    1 => {         // if intercection determins single word
+                        let child = Node::new_word(words[0]);
+                        intercection_node.append_child(child);
+                    },
+                    _ => {          // more than one word
+                        let words = Words::from_iter(words.iter()).unwrap();
+                        let children = words.build_children();
+                        intercection_node.set_children(children)
+                    }
+                }
+                word_node.append_child(intercection_node)
+            }
+            nodes.push(word_node)
+        }
+        nodes
     }
 
     // let first_metric = metrics.first().unwrap();
@@ -110,18 +139,18 @@ mod test {
 
     #[test]
     fn test_compute_intersections() {
-        // let words = [
-        //     "endure",
-        //     "period",
-        //     "around",
-        //     "praise",
-        //     "lovely",
-        //     "skulls",
-        //     "almost",
-        // ]; praise -> period
         let words = [
-            "working", "annoyed", "essence", "watched", "harmful", "primate", "caravan",
-        ];
+            "endure",
+            "period",
+            "around",
+            "praise",
+            "lovely",
+            "skulls",
+            "almost",
+        ]; //praise -> period
+        // let words = [
+        //     "working", "annoyed", "essence", "watched", "harmful", "primate", "caravan",
+        // ];
         // let words = [
         //     "working",
         //     "harmful", //
@@ -137,14 +166,9 @@ mod test {
         //     "essence", //
         //     "primate", //
         // ];
-        let mut words = Words::from_iter(words.iter()).unwrap();
+        let words = Words::from_iter(words.iter()).unwrap();
         // assert_eq!(words.intersections().row(0), vec![&-1, &0, &1, &1, &0, &0]);
-        let metrics = words.solve();
-        for (i, w) in words.words().iter().enumerate() {
-            println!("{i}.\t{w}");
-        }
-        for (i, m) in metrics {
-            println!("{}\t{m}", &words.word(i).unwrap())
-        }
+        let mut tree = words.build_tree();
+        tree.run();
     }
 }
