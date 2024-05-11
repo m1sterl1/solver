@@ -111,39 +111,16 @@ mod test {
 
     #[test]
     fn test_compute_intersections() {
-        // let words = [
-        //     "endure",
-        //     "period",
-        //     "around",
-        //     "praise",
-        //     "lovely",
-        //     "skulls",
-        //     "almost",
-        // ]; praise -> period
         let words = [
-            "working",
-            "annoyed",
-            "essence",
-            "watched",
-            "harmful",
-            "primate",
-            "caravan",
+            "truly",
+            "spare",
+            "feral",
+            "sixty",
+            "whole",
+            "james",
+            "wakes",
         ];
-        // let words = [
-        //     "working",
-        //     "harmful", //
-        //     "caravan", //
-        // ];
-        // let words = [
-        //     "working", //
-        //     "watched", //
-        //     "primate",
-        // ];
-        // let words = [
-        //     "annoyed",
-        //     "essence", //
-        //     "primate", //
-        // ];
+
         let mut words = Words::from_iter(words.iter()).unwrap();
         // assert_eq!(words.intersections().row(0), vec![&-1, &0, &1, &1, &0, &0]);
         let metrics = words.solve();
