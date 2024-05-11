@@ -3,6 +3,6 @@ use std::error::Error;
 mod matrix;
 mod utils;
 pub mod words;
-mod groups;
+pub mod metric;
 
-type Result<T> = std::result::Result<T, Box<dyn Error>>;
+pub type Result<T> = std::result::Result<T, Box<dyn Error>>;

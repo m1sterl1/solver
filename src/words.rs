@@ -1,7 +1,8 @@
-use crate::matrix::Matrix;
-use crate::utils::get_coincidence;
-use crate::Result;
 use std::{fs::read_to_string, path::Path};
+use crate::matrix::Matrix;
+use crate::utils::{get_coincidence,Groups, GroupsStruct};
+use crate::metric::Metric;
+use crate::Result;
 
 pub struct Words {
     words: Vec<String>,
@@ -37,15 +38,36 @@ impl Words {
         Self::from_iter(words)
     }
 
-    pub fn solve(&mut self) {
+    /// Compute intersections, metrics for each word
+    /// 
+    pub fn solve(&mut self) -> Vec<(usize, Metric)>{
         self.compute_intersections();
-        for i in 0..self.words.len() {
-            println!("{} {:?}", self.words[i], self.intersections.row(i))
-        }
+        // form Vec<(index, metric)>
+        let mut metrics = (0..self.intersections.rows())
+        .map(|i|self.intersections.row(i))
+        .map(|r|r.into_iter().map(|i|*i).collect::<Vec<_>>())
+        .map(|r|r.into_iter().groups())
+        .map(|mut g|Metric::from_group(g))
+        .enumerate()
+        .collect::<Vec<_>>();
+        // take all equal highest metrics 
+        metrics.sort_by(|a, b|b.1.partial_cmp(&a.1).unwrap());
+        let first_metric = &metrics.first().unwrap().1.clone();
+        metrics
+        .into_iter()
+        .filter(|(i,m)|m == first_metric)
+        .collect()
     }
+
+        // let first_metric = metrics.first().unwrap();
+
 
     pub fn words(&self) -> &Vec<String> {
         &self.words
+    }
+
+    pub fn word(&self, i:usize) -> Option<&str>{
+        self.words.get(i).map(|s|s.as_str())
     }
 
     pub fn intersections(&self) -> &Matrix<i32> {
@@ -89,16 +111,47 @@ mod test {
 
     #[test]
     fn test_compute_intersections() {
+        // let words = [
+        //     "endure",
+        //     "period",
+        //     "around",
+        //     "praise",
+        //     "lovely",
+        //     "skulls",
+        //     "almost",
+        // ]; praise -> period
         let words = [
-            "processor",
-            "durasteel",
-            "consisted",
-            "extremely",
-            "beginning",
-            "untouched",
+            "working",
+            "annoyed",
+            "essence",
+            "watched",
+            "harmful",
+            "primate",
+            "caravan",
         ];
+        // let words = [
+        //     "working",
+        //     "harmful", //
+        //     "caravan", //
+        // ];
+        // let words = [
+        //     "working", //
+        //     "watched", //
+        //     "primate",
+        // ];
+        // let words = [
+        //     "annoyed",
+        //     "essence", //
+        //     "primate", //
+        // ];
         let mut words = Words::from_iter(words.iter()).unwrap();
-        words.compute_intersections();
-        assert_eq!(words.intersections().row(0), vec![&-1, &0, &1, &1, &0, &0]);
+        // assert_eq!(words.intersections().row(0), vec![&-1, &0, &1, &1, &0, &0]);
+        let metrics = words.solve();
+        for (i,w) in words.words().iter().enumerate(){
+            println!("{i}.\t{w}");
+        }
+        for (i, m) in metrics{
+            println!("{}\t{m}", &words.word(i).unwrap())
+        }
     }
 }

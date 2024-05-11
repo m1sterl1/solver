@@ -1,4 +1,49 @@
 use std::iter::zip;
+use std::collections::{ HashMap};
+use std::hash::Hash;
+
+//////// Groups trait ////////
+
+#[derive(Clone)]
+pub struct GroupsStruct<T>{
+    groups: HashMap<T, Vec<usize>>
+}
+
+impl<T> GroupsStruct<T>
+where   T:Eq+Hash{
+    pub fn new<I:Iterator<Item=T>>(i: I) -> Self{
+        let mut groups = HashMap::new();
+        for (i, el) in i.enumerate(){    
+            groups.entry(el)
+            .and_modify(|v:&mut Vec<usize>|v.push(i))
+            .or_insert(vec![i]);
+        }
+        Self{groups}
+    }
+
+    pub fn groups(&self) -> &HashMap<T, Vec<usize>>{
+        &self.groups
+    }
+
+    pub fn groups_mut(&mut self) -> &mut HashMap<T, Vec<usize>>{
+        &mut self.groups
+    }
+}
+
+pub trait Groups<T>
+where   Self:Sized + Iterator<Item = T>,
+        T: Eq + Hash{
+    fn groups(self) -> GroupsStruct<T>{
+        GroupsStruct::new(self)
+    }
+}
+
+impl<T,I> Groups<T> for I
+where   T: Hash+Eq, 
+        I:Iterator<Item = T>{}
+
+//////// Groups trait ////////
+
 
 /// Return number ofequal elements in the same position
 /// for two strings
