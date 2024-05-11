@@ -7,5 +7,7 @@ edition = "2021"
 
 [dependencies]
 
-[target.release]
+[profile.release]
 strip=true
+panic="abort"
+lto=true
