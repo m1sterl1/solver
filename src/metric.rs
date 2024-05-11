@@ -20,8 +20,7 @@ impl Metric {
         let mut groups = groups.groups().clone();
         groups.remove(&-1);
         let g_number = groups.len();
-        let delta =
-            groups.values().map(|v| v.len()).max().unwrap() 
+        let delta = groups.values().map(|v| v.len()).max().unwrap()
             - groups.values().map(|v| v.len()).min().unwrap();
         Self {
             word: word.to_string(),
@@ -59,24 +58,24 @@ impl PartialEq for Metric {
 impl PartialOrd for Metric {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         if self.g_number == other.g_number {
-            return <usize as PartialOrd<usize>>::partial_cmp(&self.delta, &other.delta)
-                .map(|o| o.reverse());
+            <usize as PartialOrd<usize>>::partial_cmp(&self.delta, &other.delta)
+                .map(|o| o.reverse())
         } else {
-            return <usize as PartialOrd<usize>>::partial_cmp(&self.g_number, &other.g_number);
+            <usize as PartialOrd<usize>>::partial_cmp(&self.g_number, &other.g_number)
         }
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::metric::{GroupsStruct, Metric};
+    use crate::metric::Metric;
 
     use super::Groups;
 
     #[test]
     fn test_main() {
-        let mut g1 = vec![0, 0, 1, -1, 2, 1].into_iter().groups();
-        let mut g2 = vec![0, 0, 0, -1, 2, 1].into_iter().groups();
+        let g1 = vec![0, 0, 1, -1, 2, 1].into_iter().groups();
+        let g2 = vec![0, 0, 0, -1, 2, 1].into_iter().groups();
         println!("{:?}\n{:?}", g1.groups(), g2.groups());
         let m1 = Metric::from_group("hello", g1);
         let m2 = Metric::from_group("world", g2);

@@ -1,8 +1,8 @@
 use crate::matrix::Matrix;
-use crate::metric::Metric;
-use crate::utils::{get_coincidence, Groups, GroupsStruct};
+
+use crate::tree::{Node, Tree};
+use crate::utils::{get_coincidence, Groups};
 use crate::Result;
-use crate::tree::{Kind, Node, Tree};
 use std::{fs::read_to_string, path::Path};
 
 pub struct Words {
@@ -26,7 +26,10 @@ impl Words {
             .collect();
         Self::check_words(&words)?;
         let intersections = Matrix::new_with(words.len(), words.len(), -1);
-        let mut words = Self {words,intersections};
+        let mut words = Self {
+            words,
+            intersections,
+        };
         words.compute_intersections();
         Ok(words)
     }
@@ -47,35 +50,30 @@ impl Words {
         Tree::new(root)
     }
 
-    fn build_children(&self) -> Vec<Node>{
+    fn build_children(&self) -> Vec<Node> {
         let mut nodes = Vec::new();
-        for (i, word) in self.words.iter().enumerate(){
+        for (i, word) in self.words.iter().enumerate() {
             // create groups of intersections
             // {intercection_number:[word_index1, word_index2,...]}
-            let mut groups = self.intersections
-            .row(i)
-            .into_iter()
-            .map(|i|*i)
-            .groups();
+            let mut groups = self.intersections.row(i).into_iter().copied().groups();
             // remove extra element
             groups.groups_mut().remove(&-1);
             // create Word node
             let mut word_node = Node::new_word(word);
             // iterate intersections/ words
-            for (intersections, words) in groups.groups().iter(){
+            for (intersections, words) in groups.groups().iter() {
                 // convert words indexes to words strings
-                let words:Vec<_> = words
-                .into_iter()
-                .map(|&i|&self.words[i])
-                .collect();
+                let words: Vec<_> = words.iter().map(|&i| &self.words[i]).collect();
                 // create new intercection node (Terminal determine intersections)
                 let mut intercection_node = Node::new_intersection(*intersections as usize);
-                match words.len(){
-                    1 => {         // if intercection determins single word
+                match words.len() {
+                    1 => {
+                        // if intercection determins single word
                         let child = Node::new_word(words[0]);
                         intercection_node.append_child(child);
-                    },
-                    _ => {          // more than one word
+                    }
+                    _ => {
+                        // more than one word
                         let words = Words::from_iter(words.iter()).unwrap();
                         let children = words.build_children();
                         intercection_node.set_children(children)
@@ -140,34 +138,9 @@ mod test {
     #[test]
     fn test_compute_intersections() {
         let words = [
-            "endure",
-            "period",
-            "around",
-            "praise",
-            "lovely",
-            "skulls",
-            "almost",
-        ]; //praise -> period
-        // let words = [
-        //     "working", "annoyed", "essence", "watched", "harmful", "primate", "caravan",
-        // ];
-        // let words = [
-        //     "working",
-        //     "harmful", //
-        //     "caravan", //
-        // ];
-        // let words = [
-        //     "working", //
-        //     "watched", //
-        //     "primate",
-        // ];
-        // let words = [
-        //     "annoyed",
-        //     "essence", //
-        //     "primate", //
-        // ];
+            "truly", "spare", "feral", "sixty", "whole", "james", "wakes",
+        ];
         let words = Words::from_iter(words.iter()).unwrap();
-        // assert_eq!(words.intersections().row(0), vec![&-1, &0, &1, &1, &0, &0]);
         let mut tree = words.build_tree();
         tree.run();
     }
