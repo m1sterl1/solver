@@ -1,7 +1,6 @@
 use std::error::Error;
 
 mod matrix;
-pub mod metric;
 pub mod tree;
 mod utils;
 pub mod words;
