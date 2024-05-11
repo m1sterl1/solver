@@ -37,12 +37,12 @@ impl<T: Copy + Default> Matrix<T> {
     }
 
     /// Returns number of rows
-    pub fn rows(&self) -> usize{
+    pub fn rows(&self) -> usize {
         self.m
     }
 
     /// Returns number of columns
-    pub fn cols(&self) -> usize{
+    pub fn cols(&self) -> usize {
         self.n
     }
     /// Fill matrix with values provided with callback
