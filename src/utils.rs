@@ -5,9 +5,11 @@ use std::iter::zip;
 
 //////// Groups trait ////////
 
+pub type GroupsHM<T> = HashMap<T, Vec<usize>>;
+
 #[derive(Clone)]
 pub struct GroupsStruct<T> {
-    groups: HashMap<T, Vec<usize>>,
+    groups: GroupsHM<T>,
 }
 
 impl<T> GroupsStruct<T>
@@ -25,11 +27,11 @@ where
         Self { groups }
     }
 
-    pub fn groups(&self) -> &HashMap<T, Vec<usize>> {
+    pub fn groups(&self) -> &GroupsHM<T> {
         &self.groups
     }
 
-    pub fn groups_mut(&mut self) -> &mut HashMap<T, Vec<usize>> {
+    pub fn groups_mut(&mut self) -> &mut GroupsHM<T> {
         &mut self.groups
     }
 }

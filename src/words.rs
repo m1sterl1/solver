@@ -3,6 +3,7 @@ use crate::matrix::Matrix;
 use crate::tree::{Node, Tree};
 use crate::utils::{get_coincidence, Groups};
 use crate::Result;
+use std::collections::HashMap;
 use std::{fs::read_to_string, path::Path};
 
 pub struct Words {
@@ -59,7 +60,7 @@ impl Words {
             // remove extra element
             groups.groups_mut().remove(&-1);
             // create Word node
-            let mut word_node = Node::new_word(word);
+            let mut word_node = Node::new_word(word, groups.groups());
             // iterate intersections/ words
             for (intersections, words) in groups.groups().iter() {
                 // convert words indexes to words strings
@@ -69,7 +70,7 @@ impl Words {
                 match words.len() {
                     1 => {
                         // if intercection determins single word
-                        let child = Node::new_word(words[0]);
+                        let child = Node::new_word(words[0], &HashMap::new());
                         intercection_node.append_child(child);
                     }
                     _ => {

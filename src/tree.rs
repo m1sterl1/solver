@@ -5,10 +5,11 @@ use std::{
 };
 
 use crate::utils::{read_index, read_index_range};
+use crate::utils::GroupsHM;
 
 pub enum Kind {
     Intersect(usize), // choice with cost
-    Word(String),
+    Word(String, GroupsHM<i32>),
     Root,
 }
 
@@ -19,9 +20,9 @@ pub struct Node {
 }
 
 impl Node {
-    pub fn new_word(word: &str) -> Self {
+    pub fn new_word(word: &str, group: &GroupsHM<i32>) -> Self {
         Self {
-            kind: Kind::Word(word.to_string()),
+            kind: Kind::Word(word.to_string(), group.clone()),
             children: vec![],
             cost: 0,
         }
@@ -51,7 +52,7 @@ impl Node {
 
     /// Append child to node, update cost value
     pub fn append_child(&mut self, child: Node) {
-        if let Kind::Word(_) = self.kind {
+        if let Kind::Word(_, _) = self.kind {
             self.cost = if child.cost < self.cost {
                 self.cost
             } else {
@@ -71,7 +72,7 @@ impl Node {
 impl Display for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let node = match &self.kind {
-            Kind::Word(word) => format!("Word {} cost {}", word, self.cost),
+            Kind::Word(word, _) => format!("Word {} cost {}", word, self.cost),
             Kind::Intersect(i) => format!("Intersect {} cost {}", i, self.cost),
             Kind::Root => format!("Root, cost {}", self.cost),
         };
@@ -114,8 +115,8 @@ impl Tree {
     fn process_intersect(&mut self) {
         println!("Word list:");
         for (i, node) in self.current.children.iter().enumerate() {
-            if let Kind::Word(word) = &node.kind {
-                println!("{:2}. {}, max life cost {}", i, word, node.cost);
+            if let Kind::Word(word, groups) = &node.kind {
+                println!("{:2}. {}, max life cost {}, groups {:?}", i, word, node.cost, groups);
             }
             // let mut canditates = self.current.children.clone();
             // canditates.sort_by(|n1, n2|n1.cost.partial_cmp(&n2.cost));
@@ -126,7 +127,7 @@ impl Tree {
         let max_index = self.current.children.len();
         let index = read_index(&self.stdin, max_index);
         self.current = self.current.children[index].clone();
-        if let Kind::Word(word) = &self.current.kind {
+        if let Kind::Word(word, _) = &self.current.kind {
             println!("Choice: {}", word);
         }
         self.next();
@@ -138,7 +139,7 @@ impl Tree {
                 self.process_intersect();
             }
             Kind::Intersect(_) => self.process_intersect(),
-            Kind::Word(_) => {
+            Kind::Word(_, _) => {
                 println!("Write number of intercections.");
                 let mut possible = vec![];
                 for node in &self.current.children {
@@ -170,15 +171,17 @@ impl Tree {
 #[cfg(test)]
 mod test {
 
+    use std::collections::HashMap;
+
     use super::{Node, Tree};
 
     #[test]
     fn print() {
         let mut root = Node::new_root();
-        let word = Node::new_word("hello");
+        let word = Node::new_word("hello", &HashMap::from([(0, vec![0,1])]));
         let mut intersection = Node::new_intersection(0);
         intersection.append_child(word);
-        let word = Node::new_word("one");
+        let word = Node::new_word("one", &HashMap::from([(0, vec![0,1])]));
         intersection.append_child(word);
         root.append_child(intersection);
 
