@@ -115,8 +115,8 @@ impl Tree {
     fn process_intersect(&mut self) {
         println!("Word list:");
         for (i, node) in self.current.children.iter().enumerate() {
-            if let Kind::Word(word, groups) = &node.kind {
-                println!("{:2}. {}, max life cost {}, groups {:?}", i, word, node.cost, groups);
+            if let Kind::Word(word, _) = &node.kind {
+                println!("{:2}. {}, max life cost {}", i, word, node.cost);
             }
             // let mut canditates = self.current.children.clone();
             // canditates.sort_by(|n1, n2|n1.cost.partial_cmp(&n2.cost));
