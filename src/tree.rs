@@ -4,8 +4,9 @@ use std::{
     rc::Rc,
 };
 
-use crate::utils::{read_index, read_index_range};
-use crate::utils::GroupsHM;
+use colored::Colorize;
+
+use crate::utils::{read_index, read_index_range, GroupsHM};
 
 pub enum Kind {
     Intersect(usize), // choice with cost
@@ -114,14 +115,22 @@ impl Tree {
 
     fn process_intersect(&mut self) {
         println!("Word list:");
+        // Save word and cost to highlight in terminal
+        let mut words_to_print = vec![];
         for (i, node) in self.current.children.iter().enumerate() {
             if let Kind::Word(word, _) = &node.kind {
-                println!("{:2}. {}, max life cost {}", i, word, node.cost);
+                words_to_print.push((i, word, node.cost));
             }
-            // let mut canditates = self.current.children.clone();
-            // canditates.sort_by(|n1, n2|n1.cost.partial_cmp(&n2.cost));
-            // let min_cost = canditates.first().unwrap().cost;
-            // let candidates = canditates.into_iter().filter(|n|n.cost == min_cost).collect::<Vec<_>>();
+
+        }
+        // Print strings, highlight prefered choices with green color
+        let min_cost = words_to_print.iter().min_by_key(|el|el.2).unwrap().2;
+        for (i, word, cost) in words_to_print{
+            let mut to_print = format!("{:2}. {}, max life cost {}", i, word, cost);
+            if cost == min_cost{
+                to_print = to_print.green().to_string();
+            }
+            println!("{to_print}");
         }
         println!("Choose:");
         let max_index = self.current.children.len();
