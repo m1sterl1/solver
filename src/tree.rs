@@ -4,8 +4,6 @@ use std::{
     rc::Rc,
 };
 
-use colored::Colorize;
-
 use crate::utils::{read_index, read_index_range, GroupsHM};
 
 pub enum Kind {
@@ -126,9 +124,9 @@ impl Tree {
         // Print strings, highlight prefered choices with green color
         let min_cost = words_to_print.iter().min_by_key(|el|el.2).unwrap().2;
         for (i, word, cost) in words_to_print{
-            let mut to_print = format!("{:2}. {}, max life cost {}", i, word, cost);
+            let mut to_print = format!("{:2}. {}, max cost {}", i, word, cost);
             if cost == min_cost{
-                to_print = to_print.green().to_string();
+                to_print.push_str(" [*]");
             }
             println!("{to_print}");
         }
