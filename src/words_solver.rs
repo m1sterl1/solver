@@ -6,13 +6,13 @@ use crate::Result;
 use std::collections::HashMap;
 use std::{fs::read_to_string, path::Path};
 
-pub struct Words {
+pub struct WordsSolver {
     words: Vec<String>,
     // matrix with number of intersections between words
     intersections: Matrix<i32>,
 }
 
-impl Words {
+impl WordsSolver {
 
     /// Create new instance from iterator over items
     /// convertable to String
@@ -69,7 +69,7 @@ impl Words {
                     }
                     _ => {
                         // more than one word
-                        let words = Words::from_iter(words.iter()).unwrap();
+                        let words = WordsSolver::from_iter(words.iter()).unwrap();
                         let children = words.build_children();
                         intercection_node.set_children(children)
                     }
@@ -128,14 +128,14 @@ impl Words {
 
 #[cfg(test)]
 mod test {
-    use super::Words;
+    use super::WordsSolver;
 
     #[test]
     fn test_compute_intersections() {
         let words = [
             "truly", "spare", "feral", "sixty", "whole", "james", "wakes",
         ];
-        let words = Words::from_iter(words.iter()).unwrap();
+        let words = WordsSolver::from_iter(words.iter()).unwrap();
         let mut tree = words.build_tree();
         let a = tree.answer();
         println!("{a:?}");

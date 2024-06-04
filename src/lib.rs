@@ -1,8 +1,9 @@
 use std::error::Error;
 
 mod matrix;
-pub mod tree;
+mod tree;
 mod utils;
-pub mod words;
+mod words_solver;
+pub mod solver;
 
 pub type Result<T> = std::result::Result<T, Box<dyn Error>>;
