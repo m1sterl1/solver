@@ -1,12 +1,13 @@
 use std::{
-    fmt::Display,
-    io::{stdin, Stdin},
-    rc::Rc,
+    collections::HashMap, fmt::Display, rc::Rc
 };
 
-use crate::utils::{read_index, read_index_range, GroupsHM};
+use crate::utils::GroupsHM;
 
-pub enum Kind {
+pub(crate) type Answer = HashMap<String, usize>;   // Answer from solver, word, usize
+pub(crate) type Guess = (String, usize);           // (word, intercection)
+
+ enum Kind {
     Intersect(usize), // choice with cost
     Word(String, GroupsHM<i32>),
     Root,
@@ -82,7 +83,6 @@ impl Display for Node {
 pub struct Tree {
     root: Rc<Node>,
     current: Rc<Node>,
-    stdin: Stdin,
 }
 
 impl Tree {
@@ -92,7 +92,6 @@ impl Tree {
         Self {
             root,
             current,
-            stdin: stdin(),
         }
     }
     pub fn print(&self) {
@@ -107,69 +106,65 @@ impl Tree {
         }
     }
 
-    pub fn run(&mut self) {
-        self.next();
+    /// Propagate state two steps and print answer for the 
+    /// Intercection node
+    pub fn next_answer(&mut self, guess: &Guess) -> Answer{
+        self.next(guess);
+        self.next(guess);
+        self.answer()
     }
 
-    fn process_intersect(&mut self) {
-        println!("Word list:");
-        // Save word and cost to highlight in terminal
-        let mut words_to_print = vec![];
-        for (i, node) in self.current.children.iter().enumerate() {
-            if let Kind::Word(word, _) = &node.kind {
-                words_to_print.push((i, word, node.cost));
-            }
-
-        }
-        // Print strings, highlight prefered choices with green color
-        let min_cost = words_to_print.iter().min_by_key(|el|el.2).unwrap().2;
-        for (i, word, cost) in words_to_print{
-            let mut to_print = format!("{:2}. {}, max cost {}", i, word, cost);
-            if cost == min_cost{
-                to_print.push_str(" [*]");
-            }
-            println!("{to_print}");
-        }
-        println!("Choose:");
-        let max_index = self.current.children.len();
-        let index = read_index(&self.stdin, max_index);
-        self.current = self.current.children[index].clone();
-        if let Kind::Word(word, _) = &self.current.kind {
-            println!("Choice: {}", word);
-        }
-        self.next();
-    }
-
-    fn next(&mut self) {
+    /// Return Answer, current node must be Root or Interction
+    pub fn answer(&self) -> Answer{
+        let mut answer = Answer::default();
         match &self.current.kind {
-            Kind::Root => {
-                self.process_intersect();
-            }
-            Kind::Intersect(_) => self.process_intersect(),
-            Kind::Word(_, _) => {
-                println!("Write number of intercections.");
-                let mut possible = vec![];
-                for node in &self.current.children {
-                    if let Kind::Intersect(i) = node.kind {
-                        possible.push(i);
+            Kind::Root | Kind::Intersect(_) => {
+                for node in self.current.children.iter(){
+                    if let Kind::Word(word, _) = &node.kind{
+                        answer.insert(word.clone(), node.cost);
                     }
                 }
-                println!("Possible values: {:?}", possible);
-                let intersection = read_index_range(&self.stdin, &possible);
+            },
+            _ => {}
+        };
+        answer
+    }
+
+    /// Propagate inner state one step
+    fn next(&mut self, guess: &Guess) {
+        let (word, num_inter) = guess;
+        match &self.current.kind {
+            Kind::Intersect(_) | Kind::Root => {
+                // search children: word == child.word
+                self.current = self
+                .current
+                .children()
+                .iter()
+                .find(|&node|{
+                    if let Kind::Word(w, _) = &node.kind{
+                        w == word
+                    } else {
+                        false
+                    }
+                })
+                .unwrap()
+                .clone();
+                
+            },
+            Kind::Word(_, _) => {
                 self.current = self
                     .current
                     .children
                     .iter()
-                    .find(|ch| {
-                        if let Kind::Intersect(i) = ch.kind {
-                            i == intersection
+                    .find(|&ch| {
+                        if let Kind::Intersect(i) = &ch.kind {
+                            i == num_inter
                         } else {
                             false
                         }
                     })
                     .unwrap()
                     .clone();
-                self.next()
             }
         }
     }

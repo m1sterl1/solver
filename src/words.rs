@@ -13,6 +13,7 @@ pub struct Words {
 }
 
 impl Words {
+
     /// Create new instance from iterator over items
     /// convertable to String
     /// Check if word's list not empty and words have equal length
@@ -33,13 +34,6 @@ impl Words {
         };
         words.compute_intersections();
         Ok(words)
-    }
-
-    /// Create new instance from file with words
-    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<Self> {
-        let words = read_to_string(path)?;
-        let words = words.split('\n');
-        Self::from_iter(words)
     }
 
     /// Compute metrics for each word
@@ -143,6 +137,9 @@ mod test {
         ];
         let words = Words::from_iter(words.iter()).unwrap();
         let mut tree = words.build_tree();
-        tree.run();
+        let a = tree.answer();
+        println!("{a:?}");
+        let a = tree.next_answer(&("spare".to_string(), 1));
+        println!("{a:?}");
     }
 }
