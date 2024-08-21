@@ -4,7 +4,6 @@ use crate::tree::{Node, Tree};
 use crate::utils::{get_coincidence, Groups};
 use crate::Result;
 use std::collections::HashMap;
-use std::{fs::read_to_string, path::Path};
 
 pub struct WordsSolver {
     words: Vec<String>,
@@ -13,7 +12,6 @@ pub struct WordsSolver {
 }
 
 impl WordsSolver {
-
     /// Create new instance from iterator over items
     /// convertable to String
     /// Check if word's list not empty and words have equal length

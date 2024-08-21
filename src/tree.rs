@@ -1,26 +1,24 @@
-use std::{
-    collections::HashMap, fmt::Display, rc::Rc
-};
+use std::{fmt::Display, rc::Rc};
 
 use crate::utils::GroupsHM;
 
-pub(crate) type Answer = HashMap<String, usize>;   // Answer from solver, word, usize
-pub(crate) type Guess = (String, usize);           // (word, intercection)
+pub type Answer = Vec<(String, usize)>; // Answer from solver, word, cost
+pub type Guess = (String, usize); // (word, intercection)
 
- enum Kind {
+enum Kind {
     Intersect(usize), // choice with cost
     Word(String, GroupsHM<i32>),
     Root,
 }
 
-pub struct Node {
+pub(crate) struct Node {
     cost: usize, // life cost
     kind: Kind,
     children: Vec<Rc<Node>>,
 }
 
 impl Node {
-    pub fn new_word(word: &str, group: &GroupsHM<i32>) -> Self {
+    pub(crate) fn new_word(word: &str, group: &GroupsHM<i32>) -> Self {
         Self {
             kind: Kind::Word(word.to_string(), group.clone()),
             children: vec![],
@@ -28,14 +26,14 @@ impl Node {
         }
     }
 
-    pub fn new_intersection(choice: usize) -> Self {
+    pub(crate) fn new_intersection(choice: usize) -> Self {
         Self {
             kind: Kind::Intersect(choice),
             children: vec![],
             cost: 0,
         }
     }
-    pub fn new_root() -> Self {
+    pub(crate) fn new_root() -> Self {
         Self {
             kind: Kind::Root,
             children: vec![],
@@ -44,14 +42,14 @@ impl Node {
     }
 
     // Set children
-    pub fn set_children(&mut self, children: Vec<Node>) {
+    pub(crate) fn set_children(&mut self, children: Vec<Node>) {
         for child in children {
             self.append_child(child)
         }
     }
 
     /// Append child to node, update cost value
-    pub fn append_child(&mut self, child: Node) {
+    pub(crate) fn append_child(&mut self, child: Node) {
         if let Kind::Word(_, _) = self.kind {
             self.cost = if child.cost < self.cost {
                 self.cost
@@ -80,21 +78,18 @@ impl Display for Node {
     }
 }
 
-pub struct Tree {
+pub(crate) struct Tree {
     root: Rc<Node>,
     current: Rc<Node>,
 }
 
 impl Tree {
-    pub fn new(root: Node) -> Self {
+    pub(crate) fn new(root: Node) -> Self {
         let root = Rc::new(root);
         let current = root.clone();
-        Self {
-            root,
-            current,
-        }
+        Self { root, current }
     }
-    pub fn print(&self) {
+    fn print(&self) {
         self.print_ident(&self.root, 0);
     }
 
@@ -106,25 +101,25 @@ impl Tree {
         }
     }
 
-    /// Propagate state two steps and print answer for the 
+    /// Propagate state two steps and print answer for the
     /// Intercection node
-    pub fn next_answer(&mut self, guess: &Guess) -> Answer{
+    pub fn next_answer(&mut self, guess: &Guess) -> Answer {
         self.next(guess);
         self.next(guess);
         self.answer()
     }
 
     /// Return Answer, current node must be Root or Interction
-    pub fn answer(&self) -> Answer{
+    pub fn answer(&self) -> Answer {
         let mut answer = Answer::default();
         match &self.current.kind {
             Kind::Root | Kind::Intersect(_) => {
-                for node in self.current.children.iter(){
-                    if let Kind::Word(word, _) = &node.kind{
-                        answer.insert(word.clone(), node.cost);
+                for node in self.current.children.iter() {
+                    if let Kind::Word(word, _) = &node.kind {
+                        answer.push((word.clone(), node.cost));
                     }
                 }
-            },
+            }
             _ => {}
         };
         answer
@@ -137,20 +132,19 @@ impl Tree {
             Kind::Intersect(_) | Kind::Root => {
                 // search children: word == child.word
                 self.current = self
-                .current
-                .children()
-                .iter()
-                .find(|&node|{
-                    if let Kind::Word(w, _) = &node.kind{
-                        w == word
-                    } else {
-                        false
-                    }
-                })
-                .unwrap()
-                .clone();
-                
-            },
+                    .current
+                    .children()
+                    .iter()
+                    .find(|&node| {
+                        if let Kind::Word(w, _) = &node.kind {
+                            w == word
+                        } else {
+                            false
+                        }
+                    })
+                    .unwrap()
+                    .clone();
+            }
             Kind::Word(_, _) => {
                 self.current = self
                     .current
@@ -180,10 +174,10 @@ mod test {
     #[test]
     fn print() {
         let mut root = Node::new_root();
-        let word = Node::new_word("hello", &HashMap::from([(0, vec![0,1])]));
+        let word = Node::new_word("hello", &HashMap::from([(0, vec![0, 1])]));
         let mut intersection = Node::new_intersection(0);
         intersection.append_child(word);
-        let word = Node::new_word("one", &HashMap::from([(0, vec![0,1])]));
+        let word = Node::new_word("one", &HashMap::from([(0, vec![0, 1])]));
         intersection.append_child(word);
         root.append_child(intersection);
 

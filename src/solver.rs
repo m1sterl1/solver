@@ -1,28 +1,26 @@
-use crate::{Result};
-use crate::tree::{Guess, Tree, Answer};
+use crate::tree::{Answer, Guess, Tree};
 use crate::words_solver::WordsSolver;
+use crate::Result;
 
-struct Solver{
+pub struct Solver {
     tree: Tree,
 }
 
-impl Solver{
-    pub fn new(mut words: Vec<String>, guesses: Vec<Guess>) -> Result<Self>{
-        let mut guessed_words:Vec<String> = guesses.iter().map(|g|g.0.clone()).collect();
-        words.append(&mut guessed_words);
+impl Solver {
+    pub fn new(words: Vec<String>, guesses: Vec<Guess>) -> Result<Self> {
         let words_solver = WordsSolver::from_iter(words.iter())?;
-        let mut  tree = words_solver.build_tree();
-        for guess in guesses{
+        let mut tree = words_solver.build_tree();
+        for guess in guesses {
             tree.next_answer(&guess);
         }
-        Ok(Self{tree})
+        Ok(Self { tree })
     }
 
-    pub fn answer(&self) -> Answer{
+    pub fn answer(&self) -> Answer {
         self.tree.answer()
     }
 
-    pub fn next_answer(&mut self, guess: &Guess) -> Answer{
+    pub fn next_answer(&mut self, guess: &Guess) -> Answer {
         self.tree.next_answer(guess)
     }
 }
